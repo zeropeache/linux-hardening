@@ -1,0 +1,125 @@
+# =============================================================================
+# auditd.rules — Homelab Audit Rules
+# Deployed by : linux-hardening/harden.sh
+# CIS Controls: 4.1.x
+# Format      : auditctl rule syntax
+# =============================================================================
+# These rules are loaded via augenrules into /etc/audit/rules.d/
+# View active rules: sudo auditctl -l
+# Search logs: sudo ausearch -k <key> | aureport
+# =============================================================================
+
+# ── Delete all existing rules (start clean) ───────────────────────────────────
+-D
+
+# ── Buffer size ───────────────────────────────────────────────────────────────
+# Increase if you see "audit: backlog limit exceeded" in dmesg
+-b 8192
+
+# ── Failure mode ──────────────────────────────────────────────────────────────
+# 1 = print failure message, 2 = panic (use 1 for homelab)
+-f 1
+
+# =============================================================================
+# SECTION 1 — Identity & Authentication Changes (CIS 4.1.6)
+# Key: identity
+# =============================================================================
+-w /etc/passwd -p wa -k identity
+-w /etc/shadow -p wa -k identity
+-w /etc/group -p wa -k identity
+-w /etc/gshadow -p wa -k identity
+-w /etc/security/opasswd -p wa -k identity
+
+# =============================================================================
+# SECTION 2 — Privilege Escalation (CIS 4.1.3)
+# Key: priv_esc, scope
+# =============================================================================
+-w /bin/su -p x -k priv_esc
+-w /usr/bin/sudo -p x -k priv_esc
+-w /etc/sudoers -p wa -k scope
+-w /etc/sudoers.d/ -p wa -k scope
+
+# =============================================================================
+# SECTION 3 — Network Configuration Changes (CIS 4.1.7)
+# Key: system-locale
+# =============================================================================
+-a always,exit -F arch=b64 -S sethostname -S setdomainname -k system-locale
+-a always,exit -F arch=b32 -S sethostname -S setdomainname -k system-locale
+-w /etc/issue -p wa -k system-locale
+-w /etc/issue.net -p wa -k system-locale
+-w /etc/hosts -p wa -k system-locale
+-w /etc/network/ -p wa -k system-locale
+
+# =============================================================================
+# SECTION 4 — Login & Session Events (CIS 4.1.8, 4.1.9)
+# Key: logins, session
+# =============================================================================
+-w /var/log/lastlog -p wa -k logins
+-w /var/run/faillock/ -p wa -k logins
+
+-w /var/run/utmp -p wa -k session
+-w /var/log/wtmp -p wa -k session
+-w /var/log/btmp -p wa -k session
+
+# =============================================================================
+# SECTION 5 — Discretionary Access Control (DAC) Changes (CIS 4.1.4)
+# Key: perm_mod
+# =============================================================================
+-a always,exit -F arch=b64 -S chmod -S fchmod -S fchmodat -F auid>=1000 -F auid!=unset -k perm_mod
+-a always,exit -F arch=b32 -S chmod -S fchmod -S fchmodat -F auid>=1000 -F auid!=unset -k perm_mod
+-a always,exit -F arch=b64 -S chown -S fchown -S fchownat -S lchown -F auid>=1000 -F auid!=unset -k perm_mod
+-a always,exit -F arch=b32 -S chown -S fchown -S fchownat -S lchown -F auid>=1000 -F auid!=unset -k perm_mod
+-a always,exit -F arch=b64 -S setxattr -S lsetxattr -S fsetxattr -F auid>=1000 -F auid!=unset -k perm_mod
+-a always,exit -F arch=b64 -S removexattr -S lremovexattr -S fremovexattr -F auid>=1000 -F auid!=unset -k perm_mod
+
+# =============================================================================
+# SECTION 6 — Unauthorised File Access Attempts (CIS 4.1.5)
+# Key: access
+# =============================================================================
+-a always,exit -F arch=b64 -S creat -S open -S openat -S truncate -S ftruncate -F exit=-EACCES -F auid>=1000 -F auid!=unset -k access
+-a always,exit -F arch=b64 -S creat -S open -S openat -S truncate -S ftruncate -F exit=-EPERM -F auid>=1000 -F auid!=unset -k access
+
+# =============================================================================
+# SECTION 7 — Filesystem Mounts (CIS 4.1.12)
+# Key: mounts
+# =============================================================================
+-a always,exit -F arch=b64 -S mount -F auid>=1000 -F auid!=unset -k mounts
+-a always,exit -F arch=b32 -S mount -F auid>=1000 -F auid!=unset -k mounts
+
+# =============================================================================
+# SECTION 8 — File Deletion (CIS 4.1.13)
+# Key: delete
+# =============================================================================
+-a always,exit -F arch=b64 -S unlink -S unlinkat -S rename -S renameat -F auid>=1000 -F auid!=unset -k delete
+-a always,exit -F arch=b32 -S unlink -S unlinkat -S rename -S renameat -F auid>=1000 -F auid!=unset -k delete
+
+# =============================================================================
+# SECTION 9 — Kernel Module Loading/Unloading (CIS 4.1.16)
+# Key: modules
+# =============================================================================
+-w /sbin/insmod -p x -k modules
+-w /sbin/rmmod -p x -k modules
+-w /sbin/modprobe -p x -k modules
+-a always,exit -F arch=b64 -S init_module -S delete_module -k modules
+
+# =============================================================================
+# SECTION 10 — SSH Config Changes
+# Key: sshd
+# =============================================================================
+-w /etc/ssh/sshd_config -p wa -k sshd
+-w /etc/ssh/sshd_config.d/ -p wa -k sshd
+
+# =============================================================================
+# SECTION 11 — Time Changes (CIS 4.1.2)
+# Key: time-change
+# =============================================================================
+-a always,exit -F arch=b64 -S adjtimex -S settimeofday -k time-change
+-a always,exit -F arch=b32 -S adjtimex -S settimeofday -S stime -k time-change
+-a always,exit -F arch=b64 -S clock_settime -k time-change
+-w /etc/localtime -p wa -k time-change
+
+# =============================================================================
+# SECTION 12 — Make rules immutable (CIS 4.1.17)
+# MUST BE LAST — requires reboot to change rules after this
+# =============================================================================
+-e 2

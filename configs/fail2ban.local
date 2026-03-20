@@ -1,0 +1,50 @@
+# =============================================================================
+# fail2ban.local — Homelab Fail2ban Configuration
+# Deployed by : linux-hardening/harden.sh
+# Reference   : https://www.fail2ban.org/wiki/index.php/MANUAL_0_8
+# =============================================================================
+# This file overrides /etc/fail2ban/jail.conf defaults.
+# Never edit jail.conf directly — it gets overwritten on upgrades.
+# =============================================================================
+
+[DEFAULT]
+# Ban duration: 1 hour
+bantime  = 1h
+
+# Window in which maxretry must occur
+findtime = 10m
+
+# Max failures before ban
+maxretry = 5
+
+# Use systemd journal as log backend (modern Debian/Kali default)
+backend  = systemd
+
+# Email notifications (optional — configure sendmail/postfix first)
+# destemail = you@youremail.com
+# sender    = fail2ban@yourhostname
+# action    = %(action_mwl)s
+
+# Ignore your own machine
+ignoreip = 127.0.0.1/8 ::1
+
+# ─── SSH ──────────────────────────────────────────────────────────────────────
+[sshd]
+enabled  = true
+port     = ssh
+logpath  = %(sshd_log)s
+maxretry = 3
+bantime  = 2h
+# Aggressive: 3 failed SSH attempts = 2h ban
+
+# ─── Optional jails (uncomment if running these services) ─────────────────────
+
+# [apache-auth]
+# enabled  = true
+# port     = http,https
+# logpath  = %(apache_error_log)s
+
+# [nginx-http-auth]
+# enabled  = true
+# port     = http,https
+# logpath  = %(nginx_error_log)s

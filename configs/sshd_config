@@ -1,0 +1,114 @@
+# =============================================================================
+# sshd_config — Hardened SSH Daemon Configuration
+# Deployed by : linux-hardening/harden.sh
+# CIS Controls: 5.2.1 – 5.2.22
+# =============================================================================
+# KEY SECURITY DECISIONS:
+#   - PasswordAuthentication no  → key-based auth only
+#   - PermitRootLogin no         → never log in directly as root
+#   - Protocol 2                 → SSHv1 is broken, never use it
+#   - X11Forwarding no           → no GUI tunnelling attack surface
+# =============================================================================
+# BEFORE APPLYING: ensure you have an SSH key pair configured.
+# Test with: ssh-copy-id user@localhost
+# Validate config: sudo sshd -t -f configs/sshd_config
+# =============================================================================
+
+# ─── Protocol & Port ──────────────────────────────────────────────────────────
+# CIS 5.2.1 — Ensure SSH Protocol is set to 2
+Port 22
+# Consider changing to a non-standard port to reduce noise (e.g. Port 2222)
+# If you do, update UFW: ufw limit 2222/tcp
+
+AddressFamily inet
+# inet = IPv4 only. Change to 'any' if you need IPv6.
+
+# ─── Authentication ───────────────────────────────────────────────────────────
+# CIS 5.2.8 — Disable root login
+PermitRootLogin no
+
+# CIS 5.2.11 — Disable password authentication (keys only)
+PasswordAuthentication no
+
+# CIS 5.2.13 — Disable empty passwords
+PermitEmptyPasswords no
+
+# CIS 5.2.19 — Only allow specific users/groups (uncomment and set your user)
+# AllowUsers yourusername
+# AllowGroups sudo
+
+# CIS 5.2.3 — Limit authentication attempts
+MaxAuthTries 3
+
+# Maximum concurrent unauthenticated connections
+MaxStartups 10:30:60
+
+# CIS 5.2.16 — Restrict SSH to specific users (challenge-response)
+ChallengeResponseAuthentication no
+
+# Disable Kerberos authentication
+KerberosAuthentication no
+GSSAPIAuthentication no
+
+# PAM integration (keep enabled for session management)
+UsePAM yes
+
+# ─── Session hardening ────────────────────────────────────────────────────────
+# CIS 5.2.10 — Idle session timeout (5 min inactivity = disconnect)
+ClientAliveInterval 300
+ClientAliveCountMax 2
+
+# CIS 5.2.9 — Disable X11 forwarding (no GUI tunnelling)
+X11Forwarding no
+
+# Disable agent forwarding (reduces lateral movement risk)
+AllowAgentForwarding no
+
+# Disable TCP forwarding (disable unless you need tunnelling)
+AllowTcpForwarding no
+
+# Disable stream local forwarding
+StreamLocalBindUnlink no
+
+# ─── Host keys ────────────────────────────────────────────────────────────────
+# Prefer Ed25519 and ECDSA over RSA
+HostKey /etc/ssh/ssh_host_ed25519_key
+HostKey /etc/ssh/ssh_host_ecdsa_key
+HostKey /etc/ssh/ssh_host_rsa_key
+
+# ─── Cryptography ─────────────────────────────────────────────────────────────
+# Modern ciphers only — remove DES, 3DES, RC4, arcfour
+Ciphers aes256-gcm@openssh.com,aes128-gcm@openssh.com,aes256-ctr,aes192-ctr,aes128-ctr
+
+# Strong MAC algorithms only
+MACs hmac-sha2-512-etm@openssh.com,hmac-sha2-256-etm@openssh.com,hmac-sha2-512,hmac-sha2-256
+
+# Key exchange: Curve25519 and DH group 14+ only
+KexAlgorithms curve25519-sha256@libssh.org,diffie-hellman-group18-sha512,diffie-hellman-group16-sha512,diffie-hellman-group14-sha256
+
+# ─── Logging ──────────────────────────────────────────────────────────────────
+# CIS 5.2.5 — Ensure SSH logging is set to INFO or higher
+SyslogFacility AUTH
+LogLevel VERBOSE
+
+# ─── Misc ─────────────────────────────────────────────────────────────────────
+# CIS 5.2.6 — Disable .rhosts files
+IgnoreRhosts yes
+
+# CIS 5.2.7 — Disable host-based authentication
+HostbasedAuthentication no
+
+# Display last login info on connection
+PrintLastLog yes
+
+# Strict mode — check key file permissions
+StrictModes yes
+
+# Disable compression (avoid post-auth compression attacks)
+Compression no
+
+# Accept locale environment variables (safe)
+AcceptEnv LANG LC_*
+
+# SFTP subsystem (keep if you use sftp)
+Subsystem sftp /usr/lib/openssh/sftp-server
