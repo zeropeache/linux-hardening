@@ -76,7 +76,7 @@ remove_packages() {
     log INFO "[CIS 2.2] Removing unnecessary/risky packages..."
 
     for pkg in "${PACKAGES_TO_REMOVE[@]}"; do
-        if dpkg -l "${pkg}" &>/dev/null; then
+        if dpkg-query -W -f='${Status}' "${pkg}" 2>/dev/null | grep -q "install ok installed"; then
             log WARN "  ${pkg}: installed → removing"
             apply "apt-get purge -y ${pkg} >> '${LOG_FILE}' 2>&1"
         else
@@ -144,7 +144,7 @@ configure_auto_updates() {
     # CIS 1.9 — Ensure updates and patches are applied
     log INFO "[CIS 1.9] Configuring unattended security updates..."
 
-    if ! dpkg -l unattended-upgrades &>/dev/null; then
+    if ! dpkg-query -W -f='${Status}' unattended-upgrades 2>/dev/null | grep -q "install ok installed"; then
         log INFO "Installing unattended-upgrades..."
         apply "apt-get install -y unattended-upgrades >> '${LOG_FILE}' 2>&1"
     else
@@ -209,7 +209,7 @@ audit_suid() {
     # Scan system and report anything not on the expected list
     log INFO "Scanning for unexpected SUID/SGID binaries..."
     local unexpected=0
-    for file in $(find / -xdev \( -perm -4000 -o -perm -2000 \) -type f 2>/dev/null || true); do
+    while IFS= read -r file; do
         local known=false
         for expected in "${SUID_EXPECTED[@]}"; do
             [[ "${file}" == "${expected}" ]] && known=true && break
@@ -224,7 +224,7 @@ audit_suid() {
             log WARN "  Unexpected SUID/SGID (review manually): ${file}"
             unexpected=1
         fi
-    done
+    done < <(find / -xdev \( -perm -4000 -o -perm -2000 \) -type f 2>/dev/null || true)
 
     if [[ "${unexpected}" -eq 0 ]]; then
         log OK "No unexpected SUID/SGID binaries found."

@@ -15,7 +15,12 @@
 # =============================================================================
 
 # ─── Protocol & Port ──────────────────────────────────────────────────────────
+<<<<<<< HEAD
 # CIS 5.2.1 — Ensure SSH Protocol is set to 2
+=======
+# CIS 5.2.1 - Ensure SSH Protocol is set to 2
+Protocol 2
+>>>>>>> ce9a80a (auth module bugs and others)
 Port 22
 # Consider changing to a non-standard port to reduce noise (e.g. Port 2222)
 # If you do, update UFW: ufw limit 2222/tcp
@@ -71,10 +76,9 @@ AllowTcpForwarding no
 StreamLocalBindUnlink no
 
 # ─── Host keys ────────────────────────────────────────────────────────────────
-# Prefer Ed25519 and ECDSA over RSA
+# Ed25519 and ECDSA only - RSA removed per CIS guidance
 HostKey /etc/ssh/ssh_host_ed25519_key
 HostKey /etc/ssh/ssh_host_ecdsa_key
-HostKey /etc/ssh/ssh_host_rsa_key
 
 # ─── Cryptography ─────────────────────────────────────────────────────────────
 # Modern ciphers only — remove DES, 3DES, RC4, arcfour

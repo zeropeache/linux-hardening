@@ -70,7 +70,9 @@
 -a always,exit -F arch=b64 -S chown -S fchown -S fchownat -S lchown -F auid>=1000 -F auid!=unset -k perm_mod
 -a always,exit -F arch=b32 -S chown -S fchown -S fchownat -S lchown -F auid>=1000 -F auid!=unset -k perm_mod
 -a always,exit -F arch=b64 -S setxattr -S lsetxattr -S fsetxattr -F auid>=1000 -F auid!=unset -k perm_mod
+-a always,exit -F arch=b32 -S setxattr -S lsetxattr -S fsetxattr -F auid>=1000 -F auid!=unset -k perm_mod
 -a always,exit -F arch=b64 -S removexattr -S lremovexattr -S fremovexattr -F auid>=1000 -F auid!=unset -k perm_mod
+-a always,exit -F arch=b32 -S removexattr -S lremovexattr -S fremovexattr -F auid>=1000 -F auid!=unset -k perm_mod
 
 # =============================================================================
 # SECTION 6 — Unauthorised File Access Attempts (CIS 4.1.5)
@@ -101,6 +103,7 @@
 -w /sbin/rmmod -p x -k modules
 -w /sbin/modprobe -p x -k modules
 -a always,exit -F arch=b64 -S init_module -S delete_module -k modules
+-a always,exit -F arch=b32 -S init_module -S delete_module -k modules
 
 # =============================================================================
 # SECTION 10 — SSH Config Changes

@@ -8,7 +8,6 @@
 # =============================================================================
 
 SSHD_CONFIG="/etc/ssh/sshd_config"
-SSHD_BACKUP="/etc/ssh/sshd_config.bak.$(date +%Y%m%d)"
 
 apply() {
     if [[ "${APPLY}" == true ]]; then
@@ -44,6 +43,7 @@ harden_ssh() {
     # Backup existing config
     if [[ "${APPLY}" == true ]]; then
         if [[ -f "${SSHD_CONFIG}" ]]; then
+            local SSHD_BACKUP="/etc/ssh/sshd_config.bak.$(date +%Y%m%d_%H%M%S)"
             cp "${SSHD_CONFIG}" "${SSHD_BACKUP}"
             log OK "Backup saved: ${SSHD_BACKUP}"
         fi
@@ -70,7 +70,7 @@ harden_pam() {
     local pwquality_conf="/etc/security/pwquality.conf"
 
     # Install libpam-pwquality if not present
-    if ! dpkg -l libpam-pwquality &>/dev/null; then
+    if ! dpkg-query -W -f='${Status}' libpam-pwquality 2>/dev/null | grep -q "install ok installed"; then
         log INFO "Installing libpam-pwquality..."
         apply "apt-get install -y libpam-pwquality >> '${LOG_FILE}' 2>&1"
     else
@@ -124,9 +124,9 @@ configure_password_ageing() {
 
     local login_defs="/etc/login.defs"
 
-    apply "sed -i 's/^PASS_MAX_DAYS.*/PASS_MAX_DAYS\t365/' ${login_defs}"
-    apply "sed -i 's/^PASS_MIN_DAYS.*/PASS_MIN_DAYS\t1/' ${login_defs}"
-    apply "sed -i 's/^PASS_WARN_AGE.*/PASS_WARN_AGE\t14/' ${login_defs}"
+    apply "sed -i $'s/^PASS_MAX_DAYS.*/PASS_MAX_DAYS\\t365/' ${login_defs}"
+    apply "sed -i $'s/^PASS_MIN_DAYS.*/PASS_MIN_DAYS\\t1/' ${login_defs}"
+    apply "sed -i $'s/^PASS_WARN_AGE.*/PASS_WARN_AGE\\t14/' ${login_defs}"
     log OK "Password ageing set: max=365 days, min=1 day, warn at 14 days"
 }
 
